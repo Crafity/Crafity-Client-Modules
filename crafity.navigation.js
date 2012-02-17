@@ -95,10 +95,32 @@
 					self.update(self.hashString);
 					self.onChange.raise(self.toString(), self.values, previousValues);
 				}
-			}, 100);
+			}, 1000);
 		}
 	}
 
 	navigation.hashInfo = new HashInfo();
+
+	navigation.init = function () {
+		var nav = {};
+
+		nav.getCurrentPageUrl = function () {
+			if (window.location.hash.indexOf("#!/") === 0) {
+				return window.location.hash.substr(2, window.location.hash.length - 2);
+			}
+			return window.document.body.getAttribute("data-href") || window.document.location.pathname;
+		};
+
+		nav.getTargets = function () {
+			var targets = {};
+			$("[id].async.target").each(function (index, element) {
+				targets[element.getAttribute("id")] =  element; 
+			});
+			return targets;
+		};
+		
+		return nav;
+
+	};
 
 }(window.crafity = window.crafity || {}, jQuery));
