@@ -12,12 +12,12 @@
 		}
 
 		function startLoading() {
-			ajaxCallCount++;
+			ajaxCallCount += 1;
 			$("html").addClass("loading");
 		}
 
 		function stopLoading() {
-			ajaxCallCount--;
+			ajaxCallCount -= 1;
 			if (ajaxCallCount === 0) {
 				$("html").removeClass("loading");
 			}
@@ -26,13 +26,15 @@
 		startLoading();
 		$.ajax({
 			url: url,
+			type: "GET",
+			contentType : "text/html",
 			success: function (data) {
 				stopLoading();
-				success(data);
+				success.apply(this, arguments);
 			},
 			error: function (err) {
 				stopLoading();
-				error(err);
+				error.apply(this, arguments);
 			}
 		});
 	};
