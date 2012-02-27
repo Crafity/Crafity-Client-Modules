@@ -5,9 +5,12 @@
 
 	crafity.ajax = function (url, success, error) {
 		// Normalize parameters
+		var type = "GET", data;
 		if (typeof url === 'object' && !success && !error) {
 			success = url.success;
 			error = url.error;
+			type = url.type || type;
+			data = url.data || data;
 			url = url.url;
 		}
 
@@ -26,8 +29,9 @@
 		startLoading();
 		$.ajax({
 			url: url,
-			type: "GET",
-			contentType : "text/html",
+			type: type,
+			data: data,
+			contentType : !data ? "text/html" : undefined,
 			success: function (data) {
 				stopLoading();
 				success.apply(this, arguments);

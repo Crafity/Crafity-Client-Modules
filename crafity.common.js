@@ -8,7 +8,7 @@
  * MIT Licensed
  */
 
-(function (crafity) {
+(function (crafity, $, window) {
 	"use strict";
 
 	if (!crafity.Exception) {
@@ -66,4 +66,24 @@
 		});
 	};
 
-}(window.crafity = window.crafity || {}));
+	crafity.catchError = function (callback) {
+		return function (err) {
+			try {
+				if (err && err.stack && err.message) { throw err; }
+				if (callback) {
+					return callback.apply(this, arguments);
+				}
+			} catch (err) {
+				window.console.error(err.stack || err.message || err.toString());
+				return false;
+			}
+		};
+	};
+	
+	crafity.ready = function (onready) {
+		$(function () {
+			onready.apply(this, arguments);
+		});
+	};
+
+}(window.crafity = window.crafity || {}, window.jQuery, window));

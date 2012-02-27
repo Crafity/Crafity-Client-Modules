@@ -1,7 +1,7 @@
 /*jslint bitwise: true, unparam: true, maxerr: 50, white: true */
 /*globals window, jQuery */
 
-(function (crafity, $) {
+(function (crafity, $, window) {
 
 	"use strict";
 
@@ -12,94 +12,356 @@
 		throw new Error("Missing dependency 'crafity.Event'");
 	}
 
-	var objects = crafity.objects
-		, Event = crafity.Event
-		, navigation = (crafity.navigation = {})
-		, window$ = $(window);
+	var navigation = (crafity.navigation = {})
+		, body$ = $(window.document.body)
+		, html$ = $("html");
 
-	function HashInfo() {
-		var self = this;
+	function openPage(href, bookmark, formData, callback) {
+		// see if the Url actually changed
+		if (!formData && html$.hasClass("ready") && html$.attr("data-href") === href.split("?")[0]) { return; }
 
-		this.onChange = new Event();
-		this.previousValues = {};
-		this.values = {};
-		this.hashString = undefined;
+		html$.removeClass('loaded').addClass('loading');
 
-		this.update = function (hashString) {
-			var member, keyValuePairs;
-			self.previousValues = {};
-			for (member in self.values) {
-				if (self.values.hasOwnProperty(member)) {
-					self.previousValues[member] = self.values[member];
-					delete self.values[member];
-				}
-			}
-			if (typeof hashString === "string" && hashString.length > 0) {
-				keyValuePairs = hashString.split("&");
-				$(keyValuePairs).each(function (index, keyValuePair) {
-					var keyValue = keyValuePair.split("=");
-					if (keyValue.length === 2) {
-						self.values[keyValue[0]] = keyValue[1];
-					} else if (keyValue.length === 1 && keyValuePair.substr(0, 1) === "!") {
-						self.values.href = keyValuePair.substr(1);
-					} else {
-						throw new Error("Invalid hash '" + keyValuePair + "'");
+		if (href.indexOf("layout=") === -1) {
+			href += (href.indexOf("?") > -1 ? "&" : "?") + ("layout=false");
+		}
+
+		if (typeof formData === 'function') {
+			callback = formData;
+			formData = undefined;
+		}
+
+		console.log("Ajax call", href);
+
+		crafity.ajax({
+			url: href,
+			type: formData ? "POST" : "GET",
+			data: formData,
+			success: crafity.catchError(function (data, textStatus, xhr) {
+				try {
+					var url = xhr.getResponseHeader("x-crafity-location").split("?")[0]
+						, content$ = $("#content")
+						, authentication$ = $("#authentication")
+						, flash$ = $("#flash")
+						, data$ = $("<div/>").append(data)
+						, showContent;
+
+					html$.attr("data-href", url);
+					if (bookmark) {
+						crafity.navigation.hashInfo.update("");
+						crafity.navigation.hashInfo.change({ href: url });
 					}
-				});
+
+					html$.removeClass('loading').addClass('loaded');
+					content$.findAndSelf(".columns").addClass("open");
+					data$.findAndSelf(".columns").addClass("open");
+
+					showContent = function showContent(data$, url) {
+						content$.empty().append(data$.findAndSelf("#content").children());
+						authentication$.empty().append(data$.findAndSelf("#authentication").children());
+						crafity.ui.flash.close(function () {
+							var loadedFlash$ = data$.findAndSelf("#flash");
+							flash$.empty().append(loadedFlash$.children());
+							flash$.attr("class", loadedFlash$.attr("class"));
+						});
+
+						content$.attr("data-href", url);
+						$("html").removeClass("not-ready").addClass("ready");
+						window.setTimeout(function () {
+							content$.findAndSelf(".columns").removeClass("open");
+							if (callback) { callback(); }
+						}, 1);
+
+						window.setTimeout(function () {
+							content$.findAndSelf(".autoexpand")
+								.removeClass("autoexpand collapsed")
+								.addClass("expanded");
+							if (callback) { callback(); }
+						}, 0);
+						window.setTimeout(function () {
+							content$.findAndSelf(".autocollapse")
+								.removeClass("autocollapse expanded")
+								.addClass("collapsed");
+						}, 0);
+					};
+
+					if (html$.hasClass("ready")) {
+						window.setTimeout((function (data$) {
+							return function () {
+								showContent(data$, url);
+							};
+						}(data$)), 500);
+					} else {
+						showContent(data$, url);
+					}
+				} catch (err) {
+					console.error("ERROR arguments", err, err.stack);
+					crafity.ui.flash.show({ message: err.message, type: "error" });
+				}
+			}),
+			error: function (jqXHR, textStatus, errorThrown) {
+				console.error("jqXHR, textStatus, errorThrown", jqXHR, jqXHR.error(), textStatus, errorThrown);
+				crafity.ui.flash.show({ message: jqXHR.responseText, type: "error" });
 			}
-		};
-
-		this.toString = function () {
-			var result = self.values.href ? "!" + self.values.href : "", member;
-			for (member in self.values) {
-				if (self.values.hasOwnProperty(member) && member !== 'href') {
-					result += (result.length > 0 ? "&" : "") + member + "=" + self.values[member];
-				}
-			}
-			return result;
-		};
-
-		this.change = function (options) {
-			var hashTag;
-
-			objects.forEach(options, function (value, member) {
-				if (typeof value !== "undefined") {
-					self.values[member] = value;
-				} else {
-					delete self.values[member];
-				}
-			});
-
-			hashTag = self.toString();
-
-			window$.get(0).location.hash = hashTag ? "#" + hashTag : "";
-			//window$.trigger("hashchange");
-		};
-
-		var storedHash;
-		if (("onhashchange" in window) && !($.browser.msie)) {
-			window$.bind("hashchange", function () {
-				var previousValues = self.previousValues;
-				self.hashString = window$.get(0).location.hash.substring(1);
-				self.update(self.hashString);
-				self.onChange.raise(self.toString(), self.values, previousValues);
-			});
-		}
-		else {
-			var prevHash;
-			window.setInterval(function () {
-				if (window.location.hash !== prevHash) {
-					prevHash = window.location.hash;
-					var previousValues = self.previousValues;
-					self.hashString = window$.get(0).location.hash.substring(1) || "!/";
-					self.update(self.hashString);
-					self.onChange.raise(self.toString(), self.values, previousValues);
-				}
-			}, 1000);
-		}
+		});
 	}
 
-	navigation.hashInfo = new HashInfo();
+	function openContent(element, href, formData, callback) {
+		var this$ = $(element)
+			, target = this$.attr("data-async-target")
+			, target$ = this$.nearest(target);
+
+		if (this$.hasClass('loading')) {
+			return false;
+		} else {
+			this$.addClass("loading");
+		}
+
+		if (typeof formData === 'function') {
+			callback = formData;
+			formData = undefined;
+		}
+
+		console.log("Ajax call", href);
+
+		//this$.removeClass('loaded').addClass('loading');
+		//this$.find(".loaded").toggleClass("loaded loading");
+
+		crafity.ajax({
+			url: href + (href.indexOf("?") > -1 ? "&" : "?") + ("layout=false"),
+			type: formData ? "POST" : "GET",
+			data: formData,
+			success: crafity.catchError(function (data) {
+
+				var container$ = $(data).nearest(target)
+					, collapsables = target$.findAndSelf(".collapsable.expanded")
+					, showContent;
+
+				this$.removeClass("loading").addClass("loaded");
+
+				showContent = function () {
+					target$.replaceWith(container$);
+
+					window.setTimeout(function () {
+						container$.findAndSelf(".autoexpand")
+							.removeClass("autoexpand collapsed")
+							.addClass("expanded");
+						if (callback) { callback(); }
+					}, 0);
+					window.setTimeout(function () {
+						container$.findAndSelf(".autocollapse")
+							.removeClass("autocollapse expanded")
+							.addClass("collapsed");
+					}, 0);
+				};
+
+				if (collapsables.length) {
+					console.log("Waiting for collapse!", collapsables, target$);
+					collapsables.each(function (index, collapsable) {
+						collapsable.addEventListener('webkitTransitionEnd',
+							function (event) {
+								showContent();
+							}, false);
+					});
+					collapsables.removeClass("expanded").addClass("collapsed");
+				} else {
+					showContent();
+				}
+
+			})
+		});
+
+		return false;
+	}
+
+	(function addUrlHashFunctionality() {
+		var objects = crafity.objects
+			, Event = crafity.Event
+			, window$ = $(window);
+
+		function HashInfo() {
+			var self = this;
+
+			this.onChange = new Event();
+			this.previousValues = {};
+			this.values = {};
+			this.hashString = undefined;
+
+			this.update = function (hashString) {
+				var member, keyValuePairs;
+				self.previousValues = {};
+				for (member in self.values) {
+					if (self.values.hasOwnProperty(member)) {
+						self.previousValues[member] = self.values[member];
+						delete self.values[member];
+					}
+				}
+				if (typeof hashString === "string" && hashString.length > 0) {
+					keyValuePairs = hashString.split("&");
+					$(keyValuePairs).each(function (index, keyValuePair) {
+						var keyValue = keyValuePair.split("=");
+						if (keyValue.length === 2) {
+							self.values[keyValue[0]] = keyValue[1];
+						} else if (keyValue.length === 1 && keyValuePair.substr(0, 1) === "!") {
+							self.values.href = keyValuePair.substr(1);
+						} else {
+							throw new Error("Invalid hash '" + keyValuePair + "'");
+						}
+					});
+				}
+			};
+
+			this.toString = function () {
+				var result = self.values.href ? "!" + self.values.href : "", member;
+				for (member in self.values) {
+					if (self.values.hasOwnProperty(member) && member !== 'href') {
+						result += (result.length > 0 ? "&" : "") + member + "=" + self.values[member];
+					}
+				}
+				return result;
+			};
+
+			this.change = function (options) {
+				var hashTag;
+
+				objects.forEach(options, function (value, member) {
+					if (typeof value !== "undefined") {
+						self.values[member] = value;
+					} else {
+						delete self.values[member];
+					}
+				});
+
+				hashTag = self.toString();
+
+				window$.get(0).location.hash = hashTag ? "#" + hashTag : "";
+				//window$.trigger("hashchange");
+			};
+
+			if (("onhashchange" in window) && !($.browser.msie)) {
+				window$.bind("hashchange", function () {
+					var previousValues = self.previousValues;
+					self.hashString = window$.get(0).location.hash.substring(1);
+					self.update(self.hashString);
+					self.onChange.raise(self.toString(), self.values, previousValues);
+				});
+			}
+			else {
+				window.setInterval((function () {
+					var prevHash;
+					return function () {
+						if (window.location.hash !== prevHash) {
+							prevHash = window.location.hash;
+							var previousValues = self.previousValues;
+							self.hashString = window$.get(0).location.hash.substring(1) || "!/";
+							self.update(self.hashString);
+							self.onChange.raise(self.toString(), self.values, previousValues);
+						}
+					};
+				}()), 1000);
+			}
+		}
+
+		navigation.hashInfo = new HashInfo();
+
+	}());
+
+	(function addAsyncUrlLoadingListener() {
+		crafity.ready(function () {
+
+			(function checkIfUrlNeedsToBeChangedToAUrlWithHash(window) {
+				if (!window.history || !window.history.pushState) {
+					return;
+				}
+				var pathname = window.location.pathname
+					, hash = window.location.hash.replace("#_=_", "");
+
+				if (hash.length < 1 && pathname && pathname !== "/") {
+
+					return window.history.pushState(null, window.document.title, '/#!' + pathname);
+					//return window.open('/#!' + pathname, '_self');
+				}
+			}(window));
+
+			crafity.navigation.hashInfo.onChange.subscribe(function (value) {
+				if (value === "_=_") { value = "/"; }
+				openPage(value.substr(1).replace("#_=_", "") || "/", true);
+			});
+
+			body$.delegate('a', 'click', crafity.catchError(function () {
+				var this$ = $(this)
+					, href = this$.attr("href")
+					, url = href.split("?")[0];
+
+				if (!this$.attr("data-async")) {
+					return !window.open(href, href.match(/^http|^https|^\/\//i) ? "_blank" : "_self");
+				}
+
+				if (this$.attr("data-async") === "page") {
+					if (this$.hasClass("return")) {
+						url += "?return=" + crafity.navigation.init().getCurrentPageUrl().split("?")[0];
+					}
+
+					openPage(url, this$.hasClass("bookmark"));
+
+				} else if (this$.attr("data-async") === "content") {
+					openContent(this, href);
+
+				} else {
+					throw new Error("Unknown Async command", this$[0].outerHTML);
+
+				}
+
+				return false;
+			}));
+
+			if (!window.location.hash) {
+				html$.removeClass("not-ready").addClass("ready");
+			} else {
+				$(window).trigger("hashchange");
+			}
+
+		});
+	}());
+
+	(function addAsyncSubmitListener() {
+		$(window.document).delegate("form", "submit", function (e) {
+			var form$ = $(e.target)
+				, formData = form$.serialize()
+				, fields$ = form$.find("input, textarea")
+				, submitButton$ = form$.find("input[type=submit]")
+				, href = form$.attr("action")
+				, url = href.split("?")[0];
+
+			fields$.attr("disabled", "disabled");
+			submitButton$.attr("data-default-value", submitButton$.val());
+			submitButton$.val(submitButton$.attr("data-busy-value") || submitButton$.val()).addClass("busy");
+
+			if (!form$.attr("data-async")) {
+				return true;
+			}
+
+			if (form$.attr("data-async") === "page") {
+				if (form$.hasClass("return")) {
+					url += "?return=" + crafity.navigation.init().getCurrentPageUrl().split("?")[0];
+				}
+
+				openPage(url, form$.hasClass("bookmark"), formData);
+
+			} else if (form$.attr("data-async") === "content") {
+				openContent(form$, href, formData, function () {
+					fields$.attr("disabled", null);
+					submitButton$.val(submitButton$.attr("data-default-value") || submitButton$.val()).removeClass("busy");
+				});
+
+			} else {
+				throw new Error("Unknown Async command", form$[0].outerHTML);
+
+			}
+
+			return false;
+		});
+	}());
 
 	navigation.init = function () {
 		var nav = {};
@@ -114,13 +376,13 @@
 		nav.getTargets = function () {
 			var targets = {};
 			$("[id].async.target").each(function (index, element) {
-				targets[element.getAttribute("id")] =  element; 
+				targets[element.getAttribute("id")] = element;
 			});
 			return targets;
 		};
-		
+
 		return nav;
 
 	};
 
-}(window.crafity = window.crafity || {}, jQuery));
+}(window.crafity = window.crafity || {}, jQuery, window));
