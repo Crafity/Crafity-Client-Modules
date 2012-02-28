@@ -48,7 +48,7 @@
 
 					html$.attr("data-href", url);
 					if (bookmark) {
-						crafity.navigation.hashInfo.update("");
+						//crafity.navigation.hashInfo.update("");
 						crafity.navigation.hashInfo.change({ href: url });
 					}
 
@@ -109,8 +109,10 @@
 	function openContent(element, href, formData, callback) {
 		var this$ = $(element)
 			, target = this$.attr("data-async-target")
-			, target$ = this$.nearest(target);
-
+			, target$ = this$.nearest(target) || $(target);
+		
+		console.log("target$", target$);
+		
 		if (this$.hasClass('loading')) {
 			return false;
 		} else {
@@ -231,7 +233,6 @@
 						delete self.values[member];
 					}
 				});
-
 				hashTag = self.toString();
 
 				window$.get(0).location.hash = hashTag ? "#" + hashTag : "";
@@ -284,7 +285,8 @@
 			}(window));
 
 			crafity.navigation.hashInfo.onChange.subscribe(function (value) {
-				if (value === "_=_") { value = "/"; }
+				if (value === "_=_") { value = "!/"; }
+				if (value.substr(0, 2) !== "!/") { return; }
 				openPage(value.substr(1).replace("#_=_", "") || "/", true);
 			});
 
