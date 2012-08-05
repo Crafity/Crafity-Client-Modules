@@ -214,3 +214,97 @@
 	}());
 
 }(window.crafity = window.crafity || {}, jQuery));
+
+// * * * * * * * * * * * * * * * * * *
+// 		Test code...
+// * * * * * * * * * * * * * * * * * *
+
+$(document).ready(function () {
+	// Variables
+	var hashInfo = crafity.navigation.hashInfo
+		, menuSection$ = $("#menu")
+		, menuSection;
+
+	if (menuSection$) {
+		menuSection = crafity.sections.create();
+		menuSection.url = "/";
+		menuSection.setInnerHtml(menuSection$.html());
+		crafity.sections.add(menuSection);
+	}
+
+	// Register on all the clicks on anchor elements
+	$("body").delegate("a", "click", function (e) {
+
+		// First make sure the A link is clicked (sometimes other click come through)
+		if (this.nodeName === 'A') {
+
+			if ($(this).hasClass("download") ||
+				$(this).hasClass("mail")) { return; }
+
+			// Get the href of the link
+			var href = this.getAttribute("href");
+
+			var base = window.location.href;
+			if (~base.lastIndexOf("#")) {
+				base = base.substring(0, base.lastIndexOf("#"));
+			}
+			if (~base.lastIndexOf("/")) {
+				base = base.substring(0, base.lastIndexOf("/") + 1);
+			}
+			href = href.replace(base, "");
+
+			// If the href is empty or
+			//  is an external link then quit
+
+			if (href && (~href.indexOf("http://") || ~href.indexOf("https://"))) {
+				return;
+			}
+
+			// Change the href in the URL's hash
+			hashInfo.change({ href: href || "/" });
+
+			return false;
+		}
+	});
+	// subscribe on navigation hash changed
+	hashInfo.onChange.subscribe(function() {
+		// Get the section belonging to the url
+		var section = crafity.sections.getByUrl(hashInfo.values.href);
+
+		if (section) {
+			// If the section is found, then show it
+			section.show();
+
+		} else if (hashInfo.values.href && hashInfo.values.href !== "/") {
+
+			// If the section was not found and a section is requisted
+			//  then create a new section...
+			crafity.sections.create(hashInfo.values.href, function(err, section) {
+				if (err) { throw err; }
+
+				// Add the section to the list of sections
+				crafity.sections.add(section);
+
+				// Subscribe to the close event of the section
+				section.onClosing.subscribe(function () {
+
+					var newSection = section.section$.prev();
+					if (!newSection || !newSection.attr("data-href")) { newSection = section.section$.next(); }
+					if (newSection && newSection.attr("data-href")) {
+						hashInfo.change({ href: newSection.attr("data-href") });
+					}
+
+					crafity.sections.remove(section);
+					return true;
+				});
+
+				// and add the new section to the screen
+				section.appendTo($("#container")).show();
+			});
+
+		}
+	});
+
+	$(window).trigger("hashchange");
+
+});

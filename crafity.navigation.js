@@ -31,7 +31,7 @@
 			formData = undefined;
 		}
 
-		console.log("Ajax call", href);
+		//console.log("Ajax call", href);
 
 		crafity.ajax({
 			url: href,
@@ -110,9 +110,7 @@
 		var this$ = $(element)
 			, target = this$.attr("data-async-target")
 			, target$ = this$.nearest(target) || $(target);
-		
-		console.log("target$", target$);
-		
+
 		if (this$.hasClass('loading')) {
 			return false;
 		} else {
@@ -124,7 +122,7 @@
 			formData = undefined;
 		}
 
-		console.log("Ajax call", href);
+		//console.log("Ajax call", href);
 
 		//this$.removeClass('loaded').addClass('loading');
 		//this$.find(".loaded").toggleClass("loaded loading");
@@ -158,7 +156,7 @@
 				};
 
 				if (collapsables.length) {
-					console.log("Waiting for collapse!", collapsables, target$);
+					//console.log("Waiting for collapse!", collapsables, target$);
 					collapsables.each(function (index, collapsable) {
 						collapsable.addEventListener('webkitTransitionEnd',
 							function (event) {
@@ -296,7 +294,8 @@
 					, url = href.split("?")[0];
 
 				if (!this$.attr("data-async")) {
-					return !window.open(href, href.match(/^http|^https|^\/\//i) ? "_blank" : "_self");
+					// First make sure the A link is clicked (sometimes other click come through)
+					return true;
 				}
 
 				if (this$.attr("data-async") === "page") {

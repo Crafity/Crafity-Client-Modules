@@ -12,13 +12,13 @@
 			, result$ = startElement$.find(query);
 
 		if (!result$.length) { result$ = startElement$.closest(query); }
-		if (!result$.length) { result$ = $(query, window.document.body); }
+		if (!result$.length) { result$ = $(query, startElement$); }
 		return result$;
 	};
 	$.fn.findAndSelf = function (selector) {
 		return this.find(selector).add(this.filter(selector));
 	};
-	
+
 	crafity.ready(function () {
 
 		(function initFlash(flash) {
@@ -33,6 +33,7 @@
 				var flash$ = $("#flash")
 					, messages$ = $(".messages", flash$);
 				if (!flash$.hasClass("open")) {
+					if (callback) { callback(); }
 					return;
 				}
 				var height = messages$.height();
@@ -70,7 +71,9 @@
 				if (!messages$.children(null).length) {
 					return;
 				}
+
 				var height = messages$.height();
+//				console.log("messages$.children()", messages$.children());
 				flash$
 					.css("margin-top", -height + "px")
 					.height(height);
@@ -104,10 +107,46 @@
 					, target = this$.nearest(targetName);
 
 				if (target.length && !target.find(e.target).length && e.target !== target.get(0)) {
-					return !target.click();
+//					console.log("this$, targetName, target", this$, targetName, target, e.target);
+					return target.click();
+					window.location.href = target.attr("href");
+					return false;
+				} else {
+					return true;
 				}
 			});
 		}());
+
+		if (document.ontouchstart !== undefined) {
+			var disableScrollUp = false, lastMouseDown;
+			var window$ = $(window);
+
+			document.ontouchstart = function (evt) {
+				lastMouseDown = new Date().getTime();
+			};
+
+			document.ontouchend = function (evt) {
+				if (new Date().getTime() - lastMouseDown > 500
+					&& window$.scrollTop() < 2) {
+					disableScrollUp = true;
+					setTimeout(function () {
+						disableScrollUp = false;
+						window$.scrollTop(2);
+						window$.scrollTop(1);
+					}, 2000);
+				}
+			};
+
+			window$.scroll(function (x) {
+				if (disableScrollUp) { return; }
+				if (window$.scrollTop() <= 0) {
+					window$.scrollTop(2);
+					window$.scrollTop(1);
+				}
+			});
+
+			window.scrollTo(0, 1);
+		}
 	});
 
 }(window.crafity = window.crafity || {}, window.jQuery, window));
