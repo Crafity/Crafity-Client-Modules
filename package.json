@@ -1,0 +1,53 @@
+{
+	"name": "crafity-client-modules",
+	"description": "Crafity Client Framework",
+	"version": "0.0.1",
+	"author": "Bart Riemens <briemens@crafity.com>",
+	"homepage": "https://github.com/Crafity/Crafity-Client-Modules#readme",
+	"keywords": [ "Crafity", "Browser", "Navigation", "UI" ],
+	"maintainers": [
+		{
+			"name": "Bart Riemens",
+			"email": "briemens@crafity.com",
+			"web": "http://crafity.com/about/bart"
+		},
+		{
+			"name": "Galina Slavova",
+			"email": "galina@crafity.com",
+			"web": "http://crafity.com/about/galina"
+		}
+	],
+	"contributors": [
+		{
+			"name": "Bart Riemens",
+			"email": "briemens@crafity.com",
+			"web": "http://crafity.com/about/bart"
+		},
+		{
+			"name": "Galina Slavova",
+			"email": "galina@crafity.com",
+			"web": "http://crafity.com/about/galina"
+		}
+	],
+	"directories": {},
+	"licenses": [
+		{
+			"type": "The MIT License",
+			"url": "https://github.com/Crafity/Crafity-Client-Modules/blob/master/LICENSE"
+		}
+	],
+	"bugs": {
+		"url": "https://github.com/Crafity/Crafity-Client-Modules/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Crafity/Crafity-Client-Modules.git"
+	},
+	"dependencies": {},
+	"engines": {
+		"node": "*"
+	},
+	"scripts": {
+		"prepublish": "npm prune"
+	}
+}
