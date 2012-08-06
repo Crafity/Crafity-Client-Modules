@@ -267,7 +267,8 @@
 
 	(function addAsyncUrlLoadingListener() {
 		crafity.ready(function () {
-
+			if (!navigation.enabled) { return; 
+			}
 			(function checkIfUrlNeedsToBeChangedToAUrlWithHash(window) {
 				if (!window.history || !window.history.pushState) {
 					return;
@@ -364,6 +365,8 @@
 		});
 	}());
 
+	navigation.enabled = true;
+	
 	navigation.init = function () {
 		var nav = {};
 

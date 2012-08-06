@@ -213,6 +213,8 @@
 
 	}());
 
+	crafity.navigation.enabled = false;
+	
 }(window.crafity = window.crafity || {}, jQuery));
 
 // * * * * * * * * * * * * * * * * * *
@@ -266,6 +268,7 @@ $(document).ready(function () {
 			return false;
 		}
 	});
+	
 	// subscribe on navigation hash changed
 	hashInfo.onChange.subscribe(function() {
 		// Get the section belonging to the url
