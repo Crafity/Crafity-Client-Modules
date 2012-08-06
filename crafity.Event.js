@@ -128,6 +128,10 @@
 			}
 		};
 
+		this.clear = function () {
+			self.handlers = [];
+			self.listenerCount = 0;
+		};
 	};
 
 }(window.crafity = window.crafity || {}));
