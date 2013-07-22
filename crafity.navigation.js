@@ -18,7 +18,9 @@
 
 	function openPage(href, bookmark, formData, callback) {
 		// see if the Url actually changed
-		if (!formData && html$.hasClass("ready") && html$.attr("data-href") === href.split("?")[0]) { return; }
+		if (!formData && html$.hasClass("ready") && html$.attr("data-href") === href.split("?")[0]) {
+			return;
+		}
 
 		html$.removeClass('loaded').addClass('loading');
 
@@ -69,14 +71,18 @@
 						$("html").removeClass("not-ready").addClass("ready");
 						window.setTimeout(function () {
 							content$.findAndSelf(".columns").removeClass("open");
-							if (callback) { callback(); }
+							if (callback) {
+								callback();
+							}
 						}, 1);
 
 						window.setTimeout(function () {
 							content$.findAndSelf(".autoexpand")
 								.removeClass("autoexpand collapsed")
 								.addClass("expanded");
-							if (callback) { callback(); }
+							if (callback) {
+								callback();
+							}
 						}, 0);
 						window.setTimeout(function () {
 							content$.findAndSelf(".autocollapse")
@@ -146,7 +152,9 @@
 						container$.findAndSelf(".autoexpand")
 							.removeClass("autoexpand collapsed")
 							.addClass("expanded");
-						if (callback) { callback(); }
+						if (callback) {
+							callback();
+						}
 					}, 0);
 					window.setTimeout(function () {
 						container$.findAndSelf(".autocollapse")
@@ -174,11 +182,13 @@
 		return false;
 	}
 
+	// initializayion method
 	(function addUrlHashFunctionality() {
 		var objects = crafity.objects
 			, Event = crafity.Event
 			, window$ = $(window);
 
+		// HashInfo constructor
 		function HashInfo() {
 			var self = this;
 
@@ -261,13 +271,16 @@
 			}
 		}
 
+		// add HashInfo object as a property of the crafity navigation
 		navigation.hashInfo = new HashInfo();
 
 	}());
 
 	(function addAsyncUrlLoadingListener() {
+
 		crafity.ready(function () {
-			if (!navigation.enabled) { return; 
+			if (!navigation.enabled) {
+				return;
 			}
 			(function checkIfUrlNeedsToBeChangedToAUrlWithHash(window) {
 				if (!window.history || !window.history.pushState) {
@@ -283,9 +296,14 @@
 				}
 			}(window));
 
+			// subscribe on: 1) hash change event and 2) all clicks on anchor elements
 			crafity.navigation.hashInfo.onChange.subscribe(function (value) {
-				if (value === "_=_") { value = "!/"; }
-				if (value.substr(0, 2) !== "!/") { return; }
+				if (value === "_=_") {
+					value = "!/";
+				}
+				if (value.substr(0, 2) !== "!/") {
+					return;
+				}
 				openPage(value.substr(1).replace("#_=_", "") || "/", true);
 			});
 
@@ -311,7 +329,6 @@
 
 				} else {
 					throw new Error("Unknown Async command", this$[0].outerHTML);
-
 				}
 
 				return false;
@@ -324,9 +341,12 @@
 			}
 
 		});
+
 	}());
 
 	(function addAsyncSubmitListener() {
+
+		// subscribe on form submit events
 		$(window.document).delegate("form", "submit", function (e) {
 			var form$ = $(e.target)
 				, formData = form$.serialize()
@@ -351,9 +371,40 @@
 				openPage(url, form$.hasClass("bookmark"), formData);
 
 			} else if (form$.attr("data-async") === "content") {
+
+				// the following lines are some hack to obtain the paddingTop of the 
+				// section with the form just BEFORE it is submitted to the server
+				var parentSection$ = form$.closest("section[data-href]")
+					, paddingTop = -1; // quick and dirty
+				
+				if (parentSection$.length) {
+					var section = crafity.sections.getByUrl(parentSection$.attr('data-href'));
+
+//					console.log("\n\rsection.getPaddingTop()", section.getPaddingTop());
+					
+					paddingTop = section.getPaddingTop() + form$.offset().top;
+				}
+				
+				// submit form
 				openContent(form$, href, formData, function () {
+
 					fields$.attr("disabled", null);
 					submitButton$.val(submitButton$.attr("data-default-value") || submitButton$.val()).removeClass("busy");
+
+					// GASL
+
+					if (paddingTop > -1) {
+						
+						$(".scrollable:first").animate(
+							{
+								"scrollTop": paddingTop,
+								opacity: 1
+							},
+							400,
+							"swing",
+							function () {
+							});
+					}
 				});
 
 			} else {
@@ -366,7 +417,7 @@
 	}());
 
 	navigation.enabled = true;
-	
+
 	navigation.init = function () {
 		var nav = {};
 

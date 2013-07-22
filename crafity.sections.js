@@ -11,7 +11,7 @@
 			, self = {}
 			, scrollable$
 			, paddingTop;
-
+		
 		/**
 		 * A type representing a Section
 		 * @param {String} url The url of the section
@@ -20,7 +20,6 @@
 		function Section(url, data) {
 
 			/* Variables */
-
 			var self = this;
 
 			/**
@@ -74,6 +73,10 @@
 				return self;
 			};
 
+			this.getPaddingTop = function () {
+				return (self.section$.get(0).offsetTop - paddingTop);
+			};
+			
 			/**
 			 * Show this section
 			 */
@@ -86,8 +89,17 @@
 					self.section$.addClass("animate");
 				}, (Math.random() * 500));
 				if (!scrollable$) { scrollable$ = $(".scrollable:first"); }
-				scrollable$.animate({ "scrollTop": (self.section$.get(0).offsetTop - paddingTop), opacity: 1 }, 400, "swing", function () {
+				
+				scrollable$.animate(
+					{ 
+						"scrollTop": self.getPaddingTop(), 
+						opacity: 1 
+					}, 
+					400, 
+					"swing", 
+					function () {
 				});
+				
 				self.visible = true;
 				return self;
 			};
