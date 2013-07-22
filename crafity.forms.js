@@ -8,6 +8,7 @@
 
 		return;
 		
+		// subscribe on the submit event of all forms in this DOM
 		$(window.document.body).delegate("form", "submit", function () {
 			var form$ = $(this)
 				, formData = form$.serialize()
