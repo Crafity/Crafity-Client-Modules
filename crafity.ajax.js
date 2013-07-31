@@ -3,6 +3,12 @@
 
 	var ajaxCallCount = 0;
 
+	/**
+	 * 
+	 * @param url
+	 * @param [success] - optional
+	 * @param [error] - optional
+	 */
 	crafity.ajax = function (url, success, error) {
 		// Normalize parameters
 		var type = "GET", data;
@@ -14,6 +20,17 @@
 			url = url.url;
 		}
 
+		if (!success) {
+			success = function () {
+				return false;
+			};
+		}
+		if (!error) {
+			error = function () {
+				return false;
+			};
+		}
+		
 		function startLoading() {
 			ajaxCallCount += 1;
 			$("html").addClass("loading");
